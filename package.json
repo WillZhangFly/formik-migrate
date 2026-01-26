@@ -1,0 +1,62 @@
+{
+  "name": "formik-migrate",
+  "version": "0.1.0",
+  "description": "Smart Formik to React Hook Form migration - analyze, convert, and validate automatically",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "formik-migrate": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/cli.ts --format cjs,esm --clean --shims",
+    "dev": "tsup src/index.ts src/cli.ts --format cjs,esm --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "formik",
+    "react-hook-form",
+    "migration",
+    "codemod",
+    "analyzer",
+    "converter",
+    "forms",
+    "react"
+  ],
+  "author": "willzhangfly",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/willzhangfly/formik-migrate"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "@babel/types": "^7.23.0",
+    "@babel/generator": "^7.23.0",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "glob": "^10.3.10",
+    "inquirer": "^8.2.5",
+    "cli-table3": "^0.6.3"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.20.4",
+    "@types/babel__generator": "^7.6.7",
+    "@types/node": "^20.11.5",
+    "@types/inquirer": "^8.2.10",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}
