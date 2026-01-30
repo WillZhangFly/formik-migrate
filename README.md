@@ -381,7 +381,7 @@ After running `formik-migrate convert`:
 
 If it saved you time, consider buying me a coffee:
 
-💚 **[Buy Me a Coffee](https://buymeacoffee.com/willzhangfly)** - $2-5 one-time
+💚 **[Buy Me a Coffee](https://buymeacoffee.com/willzhangfly)**
 
 This tool saves hours of work. If it helped you, a small tip helps me keep building!
 
