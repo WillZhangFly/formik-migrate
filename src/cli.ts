@@ -9,13 +9,16 @@ import * as fs from 'fs';
 import { FormikAnalyzer } from './analyzer';
 import { generateConsoleReport, generateJsonReport, generateMarkdownReport } from './reporter';
 import { SafeTransformer } from './transformer';
+import { watchDirectory, formatWatchOutput } from './utils/watch';
+import { generateHtmlReport } from './reporters/html';
+import { convertYupToZod } from './utils/zod-converter';
 
 const program = new Command();
 
 program
   .name('formik-migrate')
   .description('Smart Formik to React Hook Form migration tool')
-  .version('0.1.0');
+  .version('0.2.0');
 
 /**
  * Analyze command - scan codebase and generate report
@@ -23,10 +26,51 @@ program
 program
   .command('analyze [directory]')
   .description('Analyze Formik usage in your codebase')
-  .option('-f, --format <format>', 'Output format (console|json|markdown)', 'console')
+  .option('-f, --format <format>', 'Output format (console|json|markdown|html)', 'console')
   .option('-o, --output <file>', 'Save report to file')
+  .option('-w, --watch', 'Watch mode - re-analyze on file changes')
+  .option('--html <file>', 'Generate HTML report')
   .action(async (directory = '.', options) => {
     const targetDir = path.resolve(process.cwd(), directory);
+
+    // Watch mode
+    if (options.watch) {
+      console.log(chalk.cyan.bold('\n👀 Watch Mode - Monitoring for changes...\n'));
+      console.log(chalk.gray(`   Directory: ${targetDir}`));
+      console.log(chalk.gray('   Press Ctrl+C to stop\n'));
+
+      let isFirstRun = true;
+
+      const watcher = watchDirectory({
+        directory: targetDir,
+        onChange: (analysis) => {
+          console.clear();
+          console.log(chalk.cyan.bold('\n🔄 Formik Migration Watch Mode\n'));
+
+          if (isFirstRun) {
+            console.log(chalk.green('Initial analysis complete!\n'));
+            isFirstRun = false;
+          } else {
+            console.log(chalk.yellow('Files changed - reanalyzed!\n'));
+          }
+
+          generateConsoleReport(analysis);
+          console.log(chalk.gray('\nWatching for changes... (Ctrl+C to stop)'));
+        },
+        onError: (error) => {
+          console.error(chalk.red(`Watch error: ${error.message}`));
+        },
+      });
+
+      // Handle Ctrl+C
+      process.on('SIGINT', () => {
+        watcher.stop();
+        console.log(chalk.yellow('\n\n👋 Watch mode stopped.\n'));
+        process.exit(0);
+      });
+
+      return; // Keep process running
+    }
 
     console.log(chalk.cyan.bold('\n🔍 Analyzing Formik usage...\n'));
 
@@ -37,6 +81,14 @@ program
       const analysis = await analyzer.analyzeCodebase(targetDir);
 
       spinner.succeed(chalk.green('Analysis complete!'));
+
+      // Generate HTML report if requested
+      if (options.html) {
+        const htmlReport = generateHtmlReport(analysis);
+        fs.writeFileSync(options.html, htmlReport);
+        console.log(chalk.green(`\n✓ HTML report saved to ${options.html}`));
+        console.log(chalk.gray(`   Open in browser: file://${path.resolve(options.html)}\n`));
+      }
 
       // Generate report based on format
       if (options.format === 'json') {
@@ -54,6 +106,17 @@ program
           console.log(chalk.green(`\n✓ Report saved to ${options.output}\n`));
         } else {
           console.log(report);
+        }
+      } else if (options.format === 'html') {
+        const htmlReport = generateHtmlReport(analysis);
+        if (options.output) {
+          fs.writeFileSync(options.output, htmlReport);
+          console.log(chalk.green(`\n✓ HTML report saved to ${options.output}\n`));
+        } else {
+          // Save to temp file and open
+          const tempFile = path.join(process.cwd(), 'formik-migration-report.html');
+          fs.writeFileSync(tempFile, htmlReport);
+          console.log(chalk.green(`\n✓ HTML report saved to ${tempFile}\n`));
         }
       } else {
         // Console format (default)
@@ -84,6 +147,7 @@ program
   .option('-d, --dry-run', 'Preview changes without modifying files')
   .option('-b, --backup', 'Create .backup files before converting')
   .option('-y, --yes', 'Skip confirmation prompts')
+  .option('--zod', 'Convert Yup schemas to Zod (experimental)')
   .action(async (directory = '.', options) => {
     const targetDir = path.resolve(process.cwd(), directory);
 

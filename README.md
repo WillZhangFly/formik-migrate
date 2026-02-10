@@ -1,11 +1,22 @@
-# @willzhangfly/formik-migrate
+# formik-migrate
 
 **The smart way to migrate from Formik to React Hook Form.**
 
 Analyze your codebase, auto-convert simple patterns, and get a clear migration plan for everything else.
 
-[![npm version](https://img.shields.io/npm/v/@willzhangfly/formik-migrate.svg)](https://www.npmjs.com/package/@willzhangfly/formik-migrate)
+[![npm version](https://img.shields.io/npm/v/formik-migrate.svg)](https://www.npmjs.com/package/formik-migrate)
+[![npm downloads](https://img.shields.io/npm/dm/formik-migrate.svg)](https://www.npmjs.com/package/formik-migrate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Features
+
+- **Analyze** your codebase and find all Formik usage
+- **Auto-convert** simple patterns (~80% of code)
+- **Watch mode** - re-analyze on file changes
+- **HTML reports** - visual migration dashboard
+- **Zod support** - convert Yup schemas to Zod (experimental)
+- **GitHub Action** - block PRs that add new Formik code
+- **Safe** - only converts what it understands
 
 ---
 
@@ -35,7 +46,7 @@ But manual migration is **painful** and takes **days or weeks** for large codeba
 ### 1. Install
 
 ```bash
-npx @willzhangfly/formik-migrate analyze
+npx formik-migrate analyze
 ```
 
 No installation needed! Use with `npx`.
@@ -43,7 +54,7 @@ No installation needed! Use with `npx`.
 Or install globally:
 
 ```bash
-npm install -g @willzhangfly/formik-migrate
+npm install -g formik-migrate
 ```
 
 ### 2. Analyze Your Codebase
@@ -189,8 +200,10 @@ formik-migrate analyze --format json
 ```
 
 **Options:**
-- `-f, --format <format>` - Output format (console, json, markdown)
+- `-f, --format <format>` - Output format (console, json, markdown, html)
 - `-o, --output <file>` - Save report to file
+- `-w, --watch` - Watch mode - re-analyze on file changes
+- `--html <file>` - Generate HTML report
 
 ### `convert [directory]`
 
@@ -211,6 +224,7 @@ formik-migrate convert --yes
 - `-d, --dry-run` - Preview without modifying files
 - `-b, --backup` - Create `.backup` files
 - `-y, --yes` - Skip confirmation prompts
+- `--zod` - Convert Yup schemas to Zod (experimental)
 
 ### `stats [directory]`
 
@@ -219,6 +233,100 @@ Quick summary of Formik usage.
 ```bash
 formik-migrate stats
 ```
+
+---
+
+## Watch Mode
+
+Re-analyze automatically when files change:
+
+```bash
+formik-migrate analyze --watch
+```
+
+Great for monitoring migration progress during development.
+
+---
+
+## HTML Reports
+
+Generate an interactive HTML dashboard:
+
+```bash
+formik-migrate analyze --html report.html
+```
+
+The report shows:
+- Migration progress visualization
+- Pattern breakdown (useFormik, Field, FieldArray, etc.)
+- File-by-file status
+- Time estimates
+
+---
+
+## Zod Support (Experimental)
+
+Convert Yup validation schemas to Zod:
+
+```bash
+formik-migrate convert --zod --backup
+```
+
+**Yup:**
+```ts
+Yup.object({
+  email: Yup.string().email().required(),
+  age: Yup.number().min(18).required(),
+})
+```
+
+**Converted to Zod:**
+```ts
+z.object({
+  email: z.string().email(),
+  age: z.number().min(18),
+})
+```
+
+Note: Complex validation patterns may need manual adjustment.
+
+---
+
+## GitHub Action
+
+Block PRs that add new Formik code:
+
+```yaml
+# .github/workflows/formik-check.yml
+name: Check Formik Usage
+
+on: [pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: willzhangfly/formik-migrate@v1
+        with:
+          fail-on-formik: false      # Fail if ANY Formik found
+          max-formik-files: 10       # Fail if more than 10 files use Formik
+          comment-on-pr: true        # Add analysis comment to PR
+```
+
+**Inputs:**
+| Input | Default | Description |
+|-------|---------|-------------|
+| `path` | `.` | Project directory |
+| `fail-on-formik` | `false` | Fail if any Formik usage |
+| `max-formik-files` | `0` | Max files with Formik (0 = no limit) |
+| `comment-on-pr` | `true` | Add comment to PR |
+
+**Outputs:**
+- `formik-files` - Number of files using Formik
+- `auto-convertible` - Patterns that can be auto-converted
+- `manual-review` - Patterns needing manual review
 
 ---
 
@@ -404,8 +512,8 @@ No subscriptions. No paywalls. Just good vibes.
 **Q: Will this break my forms?**  
 A: No. The tool only converts simple patterns it's 100% sure about. Everything else is flagged for manual review.
 
-**Q: What if I don't use Yup?**  
-A: Currently supports Yup. Zod support coming soon. Or you can migrate validation schemas manually after.
+**Q: What if I don't use Yup?**
+A: We support both Yup and Zod! Use `--zod` flag to convert Yup schemas to Zod automatically.
 
 **Q: Can I undo the changes?**  
 A: Yes! Use `--backup` flag to create backup files. Or just use git to revert.
